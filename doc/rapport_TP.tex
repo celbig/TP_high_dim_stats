@@ -29,21 +29,23 @@
 \newcommand{\simulfigure}[4][h!]{
 \begin{figure}[#1]
   \centering
-  \hfill
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
-         \showthe\textwidth
          \input{../figures/xhat_#2_#3_#4.pgf}
          \caption{Estimateur $\xhat$ et signal originel $x$}
-     \end{subfigure}
-     \hfill
+     \end{subfigure}\\
+
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
          \input{../figures/objectives_functions_#2_#3_#4.pgf}
-         % \includegraphics[width=\textwidth]{../figures/objectives_functions_#1_#2_#3.png}
          \caption{Haut : fonctions objectifs en fonction du nombre d'itérations, Bas : Duality gap}
      \end{subfigure}
      \hfill
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \input{../figures/duality_gap_#2_#3_#4.pgf}
+         \caption{Haut : fonctions objectifs en fonction du nombre d'itérations, Bas : Duality gap}
+     \end{subfigure}
      \caption{Algorithme ``Forward-Backward'' pour $\lambda = #2$, $gamma = \frac{#3}{\nu}$}
      \label{autofig:#2_#3_#4}
 \end{figure}
@@ -281,11 +283,10 @@ Le tableau \ref{table:resultats ex2} présente les performences de l'estimateur 
 \paragraph{}
 La figure \ref{fig:ex2 objective} Présente l'évolution de la foonction objectif en fonction du nombre d'itérations. On remarque que les courbes sont très similaires pour toutes les valeurs de $\lambda$ ce qui est justifié par le fait qu'un tout petit nombre de variables sont utiles pou prédire correctement l'état des patients.
 
-\begin{figure}[h!t]
+\begin{figure}[h!b]
   \centering
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
-         \showthe\textwidth
          \input{../figures/ex2_objective_0.1.pgf}
          \caption{$\lambda = 0.1$}
      \end{subfigure}
