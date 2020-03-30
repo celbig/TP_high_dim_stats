@@ -1,0 +1,323 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[top=2cm,right=2.5cm,left=2.5cm,bottom=3cm]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{dutchcal}
+\usepackage{placeins}
+\usepackage{pgf}
+\usepackage{url}
+
+
+\newcommand{\Rset}{\mathbb{R}}
+\newcommand{\Nset}{\mathbb{N}}
+\newcommand{\xhat}{{\hat{x}}}
+\newcommand{\uhat}{{\hat{u}}}
+\newcommand{\Lstar}{L^{*}}
+\newcommand{\grad}{\nabla}
+\newcommand{\ic}{\mathcal{i}_{\left\{ v\in \Rset^{N-1}\, /\, \norm[\infty]{v} \leq \lambda \right\}}}
+\newcommand{\norm}[2][2]{\left\lVert#2\right\rVert_{#1}}
+\newcommand{\pscal}[2]{\left< #1, \,#2 \right>}
+\DeclareMathOperator{\prox}{prox}
+
+\graphicspath{ {./figures/} }
+\newcommand{\simulfigure}[4][h!]{
+\begin{figure}[#1]
+  \centering
+  \hfill
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \showthe\textwidth
+         \input{figures/xhat_#2_#3_#4.pgf}
+         \caption{Estimateur $\xhat$ et signal originel $x$}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \input{figures/objectives_functions_#2_#3_#4.pgf}
+         % \includegraphics[width=\textwidth]{figures/objectives_functions_#1_#2_#3.png}
+         \caption{Haut : fonctions objectifs en fonction du nombre d'itérations, Bas : Duality gap}
+     \end{subfigure}
+     \hfill
+     \caption{Algorithme ``Forward-Backward'' pour $\lambda = #2$, $gamma = \frac{#3}{\nu}$}
+     \label{autofig:#2_#3_#4}
+\end{figure}
+}
+\newcommand{\autoref}[3]{\ref{autofig:#1_#2_#3}}
+
+
+
+
+\author{Célestn \bsc{Bigarré}}
+\title{Compte rendu de TP de statistiques}
+
+\begin{document}
+\maketitle
+L'objectif de ce TP est d'implémenter un algorithme d'optimisation non-régulière, l'algorithme ``Forward-Backward'' pour calculer différents estimateurs statistiques. Ces estimateurs sont solutions d'un problème de minimisation pénalisé par la norme 1 ce qui rend leur calcul impossible avec les méthodes classiques de descente de gradient, car $||\cdot||_1$ n'est pas différentiable.
+
+
+\section{Piecewise constant denoising}
+On coonsidère un signal constant par morceaux  $\bar x \in \Rset^N$ auquel on rajoute un bruit blanc gaussien standard,
+$
+y_k = \bar x_k + \mathcal{N}(0,1)
+$. Les signaux utilisés sont présenté à la Figure \ref{fig:signaux}.
+
+\begin{figure}[h]
+  \centering
+  \input{figures/signaux.pgf}
+  \caption{Le signal $\bar x$ et sa version bruitée $y$}
+  \label{fig:signaux}
+\end{figure}
+
+On cherche à calculer un estimateur de $\bar x$ à partr du signal bruité $y$. L'estimaeur choisi est solution du problème de minimisation suivant :
+\begin{equation}
+  \xhat_\lambda = \arg\min_{x \in \Rset^N } \frac{1}{2} \norm{x-y}^2 + \lambda \norm[1]{Lx} \tag{$\ast$} \label{eq:primal}
+\end{equation}
+
+Avec $L : \Rset^N \to \Rset^{N-1}$, l'opérateur des différences finies.
+\subsection{Effets du parametre $\lambda$}
+L'estimateur $\xhat$ est parametré par $\lambda$ qui vient pondérer la norme 1 de $Lx$ dans le problème d'optimisation.
+
+ On remarque que pour $\lambda = 0$, l'estimateur est le signal bruité lui même. De plus, pour $\lambda = +\infty$ l'estimateur devient la fonction constante minimisant les moindres carrés. En effet, pour $\lambda = + \infty$,
+\[
+ \lambda\norm[1]{Lx} = \begin{cases}
+   0 &\text{si $x$ est constant}\\
+   +\infty&\text{sinon}
+\end{cases}
+\]
+
+En fait, le paramètre $\lambda$ agit sur le niveau de ``sparcité'' de $L\xhat$, c'est-à-dire sur son nombre de coefficients nuls. Plus $\lambda$ est grand, plus $L\xhat$ aura de coefficient nuls, c'est-à-dire plus x sera constant sur de grand intervalles.
+
+Le paramètre $\lambda$ joue donc sur le caractère constant par morceaux de $\xhat$.
+
+\subsection{Problème dual}
+On a déjà montré dans le DM préparatoire que le problème dual s'écrit,
+\begin{equation}
+  \uhat_\lambda \in \arg\min_{u \in \Rset^{N-1}} \frac{1}{2} \norm{y - \Lstar}^2 \qquad \text{soumis à } \norm[\infty]{u} \leq \lambda \tag{$\ast\ast$} \label{eq:dual}
+\end{equation}
+
+On rappel de plus que la relation entre les solutions du problème primal et du problème dual est,
+\[
+\xhat_\lambda = y - \Lstar\uhat_\lambda
+\]
+
+\subsection{Résolution par l'algorithme ``Forward-Backward''}
+On cherche maintenant à résoudre ce problème avec l'algorithme ``Forward-Backward'' appliqué à la formulation duale \ref{eq:dual}.
+
+En posant :
+\begin{align*}
+  g :& \Rset^N \to \Rset\\
+  & u \mapsto \frac{1}{2}\norm{y - \Lstar u}^2\\
+\intertext{et,}
+  f : & \Rset^{N-1} \to \bar\Rset\\
+  & u \mapsto \ic
+\end{align*}
+
+On a bien que $g \in C^\infty$, en particulier $f \in C^1$ avec $\grad g$ lipschitzienne et $f$ fonction propre. Le problème dual consiste en la minimisation de $f+g$, on est donc bien placé dans le cadre de l'algorithme ``Forward-Backward''.
+
+\subsubsection*{Calcul de $\grad g$}
+\begin{align*}
+  \grad_u g &= \grad_u \left( \frac{1}{2} \pscal{y-\Lstar u}{y-\Lstar u}\right)\\
+  &= \frac{1}{2}\grad_u \left( \pscal{y}{y} - 2 \pscal{y}{\Lstar u} + \pscal{\Lstar u}{\Lstar u} \right)\\
+  &= -\grad_u \pscal{u}{Ly} + \frac{1}{2}\pscal{u}{L\Lstar u}\\
+  &= \frac{1}{2}2L\Lstar u - Ly\\
+  &= L\left( \Lstar u - y\right)
+\end{align*}
+
+Comme $\grad g$ est une fonction affine, sa constante de lipschitz $\nu$ est donnée par :
+\[
+\nu = \norm[]{L\Lstar}^{-1}
+\]
+
+\subsubsection*{Calcul de $P_{\norm[\infty]{\cdot} \leq \gamma}$}
+Le calcul de $\prox_{\gamma f} =  P_{\norm[\infty]{\cdot} \leq \lambda}$ est présenté dans le DM, pour rappel on a :
+\[
+\big(\prox_{\gamma f}(u)\big)_k = \begin{cases}
+  \lambda &\text{si } x_k \geq \lambda\\
+  x_k & \text{si } -\lambda \leq x_k \leq \lambda\\
+  -\lambda &\text{si } x_k \leq -\lambda
+\end{cases}
+\]
+
+\subsubsection*{Algorithme de ``Forward-Backward''}
+L'algorithme s'écrit,
+\[
+\left\{
+\begin{aligned}
+  &u_0 \in R^{N-1}\\
+  &v_n = u_n - \gamma \grad g(u_n)\\
+  &u_{n+1} = u_n + \lambda_n (\prox_{\gamma f}v_n - u_n)
+\end{aligned}
+\right.
+\]
+Avec,
+\begin{align*}
+  \gamma &\in ]0, \frac{2}{\nu}[ & \delta &= \min \{1, 1/(\nu\gamma)\}\\
+  (\lambda_n)_{n \in \Nset} &\in [0, \delta[^\Nset  &\sum_{n\in\Nset}\lambda_n (\delta - \lambda_n) &= +\infty
+\end{align*}
+
+\subsection{Simulations}
+Les figures \autoref{0.1}{1}{0.9} à \autoref{100}{1}{0.9} présentent les estimateurs pour différentes valeurs de paramètres $\lambda$ et $\gamma$
+\simulfigure[h!]{0.1}{1}{0.9}
+\simulfigure[h!]{1}{1}{0.9}
+\simulfigure[p]{1.5}{1}{0.9}
+\simulfigure[p]{2}{1}{0.9}
+\simulfigure[p]{2}{1.5}{0.6}
+\simulfigure[t!]{5}{1}{0.9}
+\simulfigure[t!]{100}{1}{0.9}
+\FloatBarrier
+
+La variation du paramètre $\lambda$ joue bien sur la taille des intervalles sur lesquels $\xhat$ reste constant. Sur la figure \autoref{0.1}{1}{0.9} on observe  que pour une valeur de $\lambda$ proche de 0, l'estimateur $\xhat$ n'est pas vraiment constant par morceaux. Pour $\lambda =100$ sur la Figure \autoref{100}{1}{0.9} par contre, l'estimateur est problement constant si l'on prend en compte les erreurs numériques liées au passage de $\uhat$ à $\xhat$.
+
+Pour des valeurs croissantes de $\lambda$ comprises entre 1 et 5 (Figures \autoref{1}{1}{0.9}, \autoref{1.5}{1}{0.9}, \autoref{2}{1}{0.9} et \autoref{5}{1}{0.9}) on remarque bien que le niveau de détail de $\xhat$ diminue lorsque $\lambda$ augmente. Graphiquement, l'approximation de $\bar x$ par $\xhat$ ne semble pas monotone en fonction de $\lambda$.
+
+\paragraph{}Le trou de dualité, qui permet de mesurer la convergence de l'algorithme, est strictement décroissante en fonction du nombre d'itérations. Plus $\lambda$ est faible, plus la convergence de l'algorithme est rapide (pour $\lambda = 100$ on note que la convergence n'est pas atteinte avec les $10 000$ itérations utilisées, expliquant pourquoi $\xhat$ n'est pas constant).
+
+\subsubsection{Erreur quadratique moyenne}
+On présente sur la figure  \ref{fig:ex1_mse} l'évolution de l'érreur quadratique moyenne entre $\xhat$ et $\bar x$ en fonction de $\lambda$. On peut vérifier la conjécture émise au paragraphe précédent, la valeur optimale de $\lambda$ d'un point de vu de l'érreur quardratique en prédiction semble se situer autour de 2.
+
+\begin{figure}[!ht]
+  \centering
+  \input{figures/mse_1_1.pgf}
+  \caption{Erreur quadratique moyenne en fonction du paramètre de régularisation (échelle log). $\lambda_n = 1$, $\gamma = \frac{1}{\nu}$, 10000 itérations pour chaque valeur de $\lambda$}
+  \label{fig:ex1_mse}
+\end{figure}
+
+\section{Sparse logistic regression}
+On regarde maintenant un problème de classification bianire. Sur une base de données de $N$ patients, on décrit l'état de santé (sain ou malade) par le vecteur $b \in \{ 0, 1 \}^N$. Pour chaque patient, on dipose de $K$ variables prédictives regroupées dans la matrice $y \in \Rset^{N \times K}$.
+
+\paragraph{}
+L'éstimateur proposé est :
+\[
+\xhat_\lambda = \arg\min_{x \in \Rset^K} \sum_{i = 1}^N  log \left( 1 + \exp(-b_i x\cdot y_i) \right) + \lambda \norm[1]{x}
+\]
+
+
+\subsection{Influence de $\lambda$}
+
+Comme dans le premier exercice, le paramètre de régularisation $\lambda$ joue sur le nombre de coefficients nuls de l'estimateur. Dans le cas présent, plus $\lambda$ sera élevé, plus le nombre de variables utilisées pour classer les patient sera petit.
+
+\subsection{Bases de données}
+La base de donnée d'entrainement utilisée contient 100 patients, Avec
+\begin{itemize}
+  \item 86 patients sains
+  \item 14 patients malades
+\end{itemize}
+
+\paragraph{}La base de données de test contient 257 patients, avec
+\begin{itemize}
+  \item 181 patients sains
+  \item 76 patients malades
+\end{itemize}
+
+\subsection{Implémentation numérique par l'algorithme ``Forward-Backward''}
+On utilise l'algorithme ``Forward-Backward'' pour calculer l'estimateur $\xhat_\lambda$. En effet, l'estimateur $\xhat_\lambda$ peut se réécrire,
+\[
+\xhat_\lambda = \arg\min_{x \in \Rset^k} f(x) + g(x)
+\]
+Avec $f \in C^1$ à gradient lipschitzien  et $g$ fonction propre, en posant :
+\[
+\left\{\begin{aligned}
+  f(x) &= \sum_{i = 1}^N  \log \left( 1 + \exp(-b_i x\cdot y_i) \right)\\
+  g(x) &= \lambda \norm[1]{x}
+\end{aligned}
+\right.
+\]
+
+\subsubsection{Calcul de $\grad f$}
+On a $f : \Rset^K \to \Rset$,  donc $\grad f : \Rset^K \to \Rset^K$.
+\begin{align*}
+  \grad f(x) &= (\grad_k f)_{1 \leq k \leq K}(x)\\
+  \intertext{et}
+  \grad_k f(x) &= \partial_k f(x)\\
+  &= \sum_{i = 1}^N \partial_k \log \left( 1 + \exp(-b_i x\cdot y_i) \right)\\
+  &= \sum_{i = 1}^N \frac{\partial_k \left( 1 + \exp(-b_i x\cdot y_i) \right)}{1 + \exp(-b_i x\cdot y_i)}\\
+  &= \sum_{i = 1}^N \frac{\exp(-b_i x\cdot y_i) \partial_k \left(-b_i x\cdot y_i \right) }{1 + \exp(-b_i x\cdot y_i)}\\
+  &= \sum_{i = 1}^N \frac{-b_i  y_{i,k}\exp(-b_i x\cdot y_i)}{1 + \exp(-b_i x\cdot y_i)}\\
+  &= \sum_{i = 1}^N -b_i  y_{i,k}\frac{1}{1 + \exp(b_i x\cdot y_i)}
+\end{align*}
+
+\subsubsection{Estimation de $\nu$}
+Comme $f$ est en fait $C^2$, la consatante de Lipschitz $\nu$ de $\grad f$ est majorée par $\sup_{\Rset^k} \norm{J \grad f (x)}$ où la norme $2$ pour les matrice est la norme de Frobenius. On  a donc
+\begin{align*}
+  \nu &\leq \sup_{\Rset^k} \norm[]{J \grad f(x)}&&\\
+  \intertext{avec,}
+  J \grad f (x) &= \left(
+    \frac{\partial \grad_i f}{\partial x_j}
+  \right)_{1\leq i,j \leq K}&&\\
+  \intertext{et}
+  \frac{\partial \grad_i f}{\partial x_j} &= \sum_{k = 1}^K
+  -b_k y_{k,i} \partial_j \left(\frac{1}{1 + \exp(b_i x \cdot y_i)} \right)&&\\
+  &= \sum_{k = 1}^K -b_k^2 y_{k,i} y_{k,j}  \frac{1}{\left(1 + \exp(b_i x \cdot y_i)\right)^2}&&\\
+  &\leq \sum_{k = 1}^K \lvert y_{k,i} y_{k,j} \rvert  & &\text{car } b_i^2 = 1
+\end{align*}
+
+On prend donc $\nu = \norm{\left(\sum_{k = 1}^K \lvert y_{k,i} y_{k,j} \rvert \right)_{1 \leq i, j\leq K}} \geq \sup_{\Rset^k} \norm{J \grad f (x)}$ qui convient et $\gamma = \frac{}{\nu}$. Pour la base de donnée d'entrainement utilisée cela correspond à une valeur de $\gamma$ de l'ordre de $10^{-7}$.
+
+\subsubsection{Résultats numériques}
+Le tableau \ref{table:resultats ex2} présente les performences de l'estimateur pour différentes valeurs de $\lambda$. On remarque que les performences sont assez stables (et très bonnes !) en fonction de $\lambda$. On remarqu que comme attendu, plus $\lambda$ augmente, plus l'estimateur est creux. La meilleur performence sur la base de test est obtenue pour $\lambda = 2$ avec taux de sparcité de $0.52$. Cela semble indiquer que la moitié des variables prédictives fournies sont utiles pour classer $96.8\%$ des patients. Les bonnes performences de l'estimaeur $\xhat_10$ nous montrent cependant que l'on peut classer correctement $94\%$ des patient en utilisant seulement $2\%$ des variables à notre disposition.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|l|l|l}
+    \hline
+    $\lambda$ & précision entrainement & précision test & sparcité\\
+    \hline
+    0.1 & 1.0 & 0.9649805447470817 & 0.02 \\
+    1 & 1.0 & 0.9649805447470817  & 0.335\\
+    2 & 1.0  &  0.9688715953307393 & 0.52\\
+    10& 0.96 & 0.9416342412451362 & 0.915\\
+
+  \end{tabular}
+  \caption{Résultats des estimateurs calculés par l'algorithme ``Foward-Backward'' pour différentes valeurs de $\lambda$. La précision est calculée comme la proportion de prédiction correctes sur la base testée, la sparcité est définie comme la proportion de coefficients nuls dans l'estimateur $\xhat_\lambda$ \\Pour toutes les simulations, $\gamma \approx 8.710\times 10^{-7}$ et $\lambda_n = 1.25$. $10000$ itérations.}
+  \label{table:resultats ex2}
+\end{table}
+
+\paragraph{}
+La figure \ref{fig:ex2 objective} Présente l'évolution de la foonction objectif en fonction du nombre d'itérations. On remarque que les courbes sont très similaires pour toutes les valeurs de $\lambda$ ce qui est justifié par le fait qu'un tout petit nombre de variables sont utiles pou prédire correctement l'état des patients.
+
+\begin{figure}[h!t]
+  \centering
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \showthe\textwidth
+         \input{figures/ex2_objective_0.1.pgf}
+         \caption{$\lambda = 0.1$}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \input{figures/ex2_objective_1.pgf}
+         \caption{$\lambda = 1$}
+     \end{subfigure}\\
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \input{figures/ex2_objective_2.pgf}
+         \caption{$\lambda = 2$}
+         \label{fig:ex2 objectif lambda 2}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.4\textwidth}
+         \centering
+         \input{figures/ex2_objective_10.pgf}
+         \caption{$\lambda = 10$}
+     \end{subfigure}
+     \caption{Évolution de la fonction objectif pour l'algorithme ``Forward-Backward'' appliqué à la regression logistique sparse. Chaque figure présente la fonction d'objectif du problème de minimisation en fonction du nombre d'itérations. \\
+     $\gamma \approx 8.710\times 10^{-7}$ et $\lambda_n = 1.25$. $10000$ itérations.}
+     \label{fig:ex2 objective}
+\end{figure}
+
+\section*{Conclusion}
+On a exploré dans ce TP deux implémentations de l'algorithme ``Forward-Backward'' pour calculer des estimateurs statistiques solution de problèmes de minimisations non réguliers.
+
+On a pu montrer l'efficacité de cet algorithme dans les problèmes d'optimisation faisant intervenir la norme $L^1$ et explorer les impact des différents paramètres de l'algorithme ainsi que les effets du paramètre de régularisation $\lambda$.
+
+\paragraph{}Le code source utilisé pour les calculs est écrit en python avec les bibliothèques \textit{numpy} et \textit{scipy}. Le code source est fournit avec ce rapport ou disponible à l'adresse :  \url{github.com/celbig/TP_high_dim_stats}
+
+
+\end{document}
