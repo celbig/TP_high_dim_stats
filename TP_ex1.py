@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use("pgf")
 plot.rcParams.update({
     "pgf.texsystem": "pdflatex",
+    'figure.autolayout' : True,
     'font.family': 'serif',
     'text.usetex': True,
     'pgf.rcfonts': False,
@@ -158,7 +159,6 @@ def TP_ex1_experiment(x, x_rand, l, gamma_coeff, N_iter, lambda_n, plot_fig = Fa
         plot.xlabel('t')
         plot.ylabel('x')
         plot.legend()
-        #plot.show()
         fig.savefig('figures/xhat_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
         fig.savefig('figures/xhat_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
 
@@ -178,7 +178,6 @@ def TP_ex1_experiment(x, x_rand, l, gamma_coeff, N_iter, lambda_n, plot_fig = Fa
         plot.legend()
         plot.xlabel('Iteration number')
         plot.ylabel('Duality gap')
-        #plot.show()
         fig.savefig('figures/objectives_functions_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
         fig.savefig('figures/objectives_functions_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
 
@@ -209,7 +208,6 @@ def TP_ex1_experiment_mse(x, x_rand, l, gamma_coeff,  N_iter, lambda_n, plot_fig
         plot.xlabel('$\\lambda$')
         plot.ylabel('error')
         plot.legend()
-        plot.show()
         fig.savefig('figures/mse_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
         fig.savefig('figures/mse_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
 
@@ -230,7 +228,6 @@ plot.xlabel('t')
 plot.ylabel('x')
 plot.legend()
 plot.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-# #plot.show()
 fig.savefig('figures/signaux.pgf')
 fig.savefig('figures/signaux.pdf')
 
