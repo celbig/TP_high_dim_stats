@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use("pgf")
 plot.rcParams.update({
     "pgf.texsystem": "pdflatex",
-    'figure.autolayout' : True,
     'font.family': 'serif',
     'text.usetex': True,
     'pgf.rcfonts': False,
@@ -163,24 +162,26 @@ def TP_ex1_experiment(x, x_rand, l, gamma_coeff, N_iter, lambda_n, plot_fig = Fa
         fig.savefig('figures/xhat_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
 
         fig = plot.figure(figsize = get_fig_params(236.01561))
-        plot.subplot(211)
         plot.plot(range(N_iter + 1), obj_primal, label='Objectif primal')
         plot.plot(range(N_iter + 1), obj_dual, label='Objectif dual')
         plot.xlabel('Iteration number')
         plot.ylabel('objective')
         plot.xscale('log')
         plot.legend()
+        fig.savefig('figures/objectives_functions_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
+        fig.savefig('figures/objectives_functions_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
 
-        plot.subplot(212)
+        fig = plot.figure(figsize = get_fig_params(236.01561))
         plot.plot(range(N_iter +  1), obj_primal + obj_dual, label = 'duality gap')
         plot.xscale('log')
         plot.yscale('log')
         plot.legend()
         plot.xlabel('Iteration number')
         plot.ylabel('Duality gap')
-        fig.savefig('figures/objectives_functions_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
-        fig.savefig('figures/objectives_functions_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
+        fig.savefig('figures/duality_gap_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
+        fig.savefig('figures/duality_gap_'+str(l)+'_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
 
+        plot.close('all')
     return x_hat
 
 def TP_ex1_experiment_mse(x, x_rand, l, gamma_coeff,  N_iter, lambda_n, plot_fig = False):
@@ -210,6 +211,7 @@ def TP_ex1_experiment_mse(x, x_rand, l, gamma_coeff,  N_iter, lambda_n, plot_fig
         plot.legend()
         fig.savefig('figures/mse_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pgf')
         fig.savefig('figures/mse_'+str(gamma_coeff)+'_'+str(lambda_n)+'.pdf')
+        plot.close('all')
 
     return mse
 
@@ -227,9 +229,10 @@ plot.plot(t, x_rand, label ='signal bruité')
 plot.xlabel('t')
 plot.ylabel('x')
 plot.legend()
-plot.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+plot.legend()
 fig.savefig('figures/signaux.pgf')
 fig.savefig('figures/signaux.pdf')
+plot.close('all')
 
 
 temp = TP_ex1_experiment(x, x_rand, 0.1, 1, 9000, 0.9, True)
@@ -243,6 +246,6 @@ TP_ex1_experiment(x, x_rand,5, 1, 6000, 0.9, True)
 TP_ex1_experiment(x, x_rand, 100, 1, 10000, 0.9, True)
 
 # lambda_list = [0, 0.1,0.5]
-lambda_list = [0, 0.1,0.5, 0.7, 1,2,3,4, 5, 10, 100]
-TP_ex1_experiment_mse(x, x_rand, lambda_list, 1, 10000, 1, True)
-plot.close('all')
+# lambda_list = [0, 0.1,0.5, 0.7, 1,2,3,4, 5, 10, 100]
+# TP_ex1_experiment_mse(x, x_rand, lambda_list, 1, 10000, 1, True)
+# plot.close('all')
