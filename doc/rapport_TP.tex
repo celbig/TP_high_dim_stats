@@ -25,7 +25,7 @@
 \newcommand{\pscal}[2]{\left< #1, \,#2 \right>}
 \DeclareMathOperator{\prox}{prox}
 
-\graphicspath{ {./figures/} }
+\graphicspath{ {./../figures/} }
 \newcommand{\simulfigure}[4][h!]{
 \begin{figure}[#1]
   \centering
@@ -33,14 +33,14 @@
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
          \showthe\textwidth
-         \input{figures/xhat_#2_#3_#4.pgf}
+         \input{../figures/xhat_#2_#3_#4.pgf}
          \caption{Estimateur $\xhat$ et signal originel $x$}
      \end{subfigure}
      \hfill
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
-         \input{figures/objectives_functions_#2_#3_#4.pgf}
-         % \includegraphics[width=\textwidth]{figures/objectives_functions_#1_#2_#3.png}
+         \input{../figures/objectives_functions_#2_#3_#4.pgf}
+         % \includegraphics[width=\textwidth]{../figures/objectives_functions_#1_#2_#3.png}
          \caption{Haut : fonctions objectifs en fonction du nombre d'itérations, Bas : Duality gap}
      \end{subfigure}
      \hfill
@@ -69,7 +69,7 @@ $. Les signaux utilisés sont présenté à la Figure \ref{fig:signaux}.
 
 \begin{figure}[h]
   \centering
-  \input{figures/signaux.pgf}
+  \input{../figures/signaux.pgf}
   \caption{Le signal $\bar x$ et sa version bruitée $y$}
   \label{fig:signaux}
 \end{figure}
@@ -183,7 +183,7 @@ On présente sur la figure  \ref{fig:ex1_mse} l'évolution de l'érreur quadrati
 
 \begin{figure}[!ht]
   \centering
-  \input{figures/mse_1_1.pgf}
+  \input{../figures/mse_1_1.pgf}
   \caption{Erreur quadratique moyenne en fonction du paramètre de régularisation (échelle log). $\lambda_n = 1$, $\gamma = \frac{1}{\nu}$, 10000 itérations pour chaque valeur de $\lambda$}
   \label{fig:ex1_mse}
 \end{figure}
@@ -286,25 +286,25 @@ La figure \ref{fig:ex2 objective} Présente l'évolution de la foonction objecti
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
          \showthe\textwidth
-         \input{figures/ex2_objective_0.1.pgf}
+         \input{../figures/ex2_objective_0.1.pgf}
          \caption{$\lambda = 0.1$}
      \end{subfigure}
      \hfill
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
-         \input{figures/ex2_objective_1.pgf}
+         \input{../figures/ex2_objective_1.pgf}
          \caption{$\lambda = 1$}
      \end{subfigure}\\
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
-         \input{figures/ex2_objective_2.pgf}
+         \input{../figures/ex2_objective_2.pgf}
          \caption{$\lambda = 2$}
          \label{fig:ex2 objectif lambda 2}
      \end{subfigure}
      \hfill
      \begin{subfigure}[b]{0.4\textwidth}
          \centering
-         \input{figures/ex2_objective_10.pgf}
+         \input{../figures/ex2_objective_10.pgf}
          \caption{$\lambda = 10$}
      \end{subfigure}
      \caption{Évolution de la fonction objectif pour l'algorithme ``Forward-Backward'' appliqué à la regression logistique sparse. Chaque figure présente la fonction d'objectif du problème de minimisation en fonction du nombre d'itérations. \\
